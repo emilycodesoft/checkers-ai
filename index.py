@@ -1,9 +1,28 @@
 #import needed functions
 import turtle
 from datetime import datetime
-from random import randint
+from random import randint, choice
+from enum import Enum
+from time import sleep
 
-gameTitle = "pyCheckers v4.17"
+gameTitle = "pyCheckers v1.00"
+class AgentsNames(Enum):
+    MINIMAX = "MiniMax"
+    RANDOM = "Random"
+    PODAMINIMAX = "Poda Alpha-Beta MiniMax"
+    QAGENT = "QLearning"
+    NEURALAGENT = "Neural Network"
+    YOURSELF = "Yourself"
+
+class GameStatus(Enum):
+    RUNNING = "Running"
+    PAUSED = "Paused"
+    ENDED = "Ended"
+
+class PLAYERS(Enum):
+    RED = 1
+    BLUE = 2
+    NONE = 0
 
 #setup output window
 wn = turtle.Screen()
@@ -27,25 +46,154 @@ def logToConsole(*strings):
         print(string,end="")
     print()
 
-#main game class
-class checkers:
 
-    #create game instance
+class Agent:
+    def __init__(self, name, player, board):
+        self.name =  name
+        self.player = player
+        self.board = board
+
+class MiniMaxAgent:
+    def __init__(self, board):
+        self.name = AgentsNames.MINIMAX.value
+        self.board = board
+    def move(self):
+        return self.findBestMove()
+    def findBestMove(self):
+        pass
+
+class RandomAgent:
+    def __init__(self, board, player):
+        self.name =  AgentsNames.RANDOM.value
+        self.player = player
+        self.board = board
+    def move(self):
+        selectedMove = None
+        availableMoves = self.board.findAvailableMovements(self.player)
+     
+        if len(availableMoves["jumps"]):
+            selectedMove = choice(availableMoves["jumps"])
+        else:
+            selectedMove = choice(availableMoves["moves"])
+        return selectedMove
+
+class YourselfAgent:
+    def __init__(self, board):
+        self.name =  AgentsNames.YOURSELF.value
+        self.board = board
+
+#class that defines a grid space and its properties
+class grid(turtle.RawTurtle):
+    
+    #variables that set the grids size
+    gridSize = 60
+    pawnRadius = 20
+    crownRadius = 10
+
+    #create grid space and give it default attributes
     def __init__(self,screen):
         self.screen = screen
-        self.resetGame()
-        self.createTitles()
+        self.defaultAttributes()
+        self.createPen()
 
-    #resets the matrix that stores game data
-    def resetGame(self):
-        self.turn = randint(1,2) #1 for red, 2 for blue
+    #creates the turtle that will draw the grid space
+    def createPen(self):
+        super(grid,self).__init__(self.screen)
+        self.hideturtle()
+        self.speed(0)
+        self.width(3)
+        self.up()
+
+    #sets the grid's attributes
+    def defaultAttributes(self):
+        self.gridX = 0
+        self.gridY = 0
+        self.colored = False #True if the square is shaded, False if white
+        self.selected = 0 #0 if space is normal, 1 or 2 if space is highlighted
+        self.pawn = False #True if there is a pawn on the grid space
+        self.player = PLAYERS.NONE.value #1 if pawn is player1 (red), 2 if pawn is player2 (blue)
+        self.king = False #True if pawn has been kinged
+
+    #removes the pawn from the grid
+    def clearPawn(self):
+        self.selected = False
+        self.pawn = False
+        self.player = PLAYERS.NONE.value
+        self.king = False
+        self.draw()
+
+    #imports all attributes from another grid object
+    def importPawn(self,gridObj):
+        self.colored = gridObj.colored
+        self.pawn = gridObj.pawn
+        self.player = gridObj.player
+        self.king = gridObj.king
         
-        logToConsole("\tStarting Player: %s" % (self.turn))
-        self.createGrid()
+        self.draw()
 
+    #places the grid at a new set of coords
+    def moveGrid(self,gX,gY):
+        self.gridX = gX
+        self.gridY = gY
+
+    #draws the grid
+    def draw(self):
+        pixleX = int(self.gridX*grid.gridSize - 4*grid.gridSize)
+        pixleY = int(self.gridY*grid.gridSize - 4*grid.gridSize)
+        self.clear()
+
+        self.goto(pixleX,pixleY)
+        self.seth(0)
+        self.down()
+        if(self.colored == True):
+            if(self.selected in [1,2]):
+                self.color((0,0,0),(0.5,1,0.5))
+            else:    
+                self.color((0,0,0),(0.75,0.75,0.75))
+            self.begin_fill()
+        for f in range(4):
+            self.fd(grid.gridSize)
+            self.left(90)
+        self.end_fill()
+        self.up()
+
+        if(self.pawn == True):
+            self.goto(pixleX + 0.5*grid.gridSize,pixleY + 0.5*grid.gridSize - grid.pawnRadius)
+            if(self.player == PLAYERS.RED.value):
+                self.color((0,0,0),(1,0.5,0.5))
+            elif(self.player == PLAYERS.BLUE.value):
+                self.color((0,0,0),(0.5,0.5,1))
+            else:
+                self.color((0,0,0),(1,0.5,1))
+            self.down()
+            self.begin_fill()
+            self.circle(grid.pawnRadius,360,16)
+            self.end_fill()
+            self.up()
+
+            if(self.king == True):
+                self.goto(pixleX + 0.5*grid.gridSize,pixleY + 0.5*grid.gridSize - grid.crownRadius)
+                self.color((0,0,0),(1,0.85,0))
+                self.down()
+                self.begin_fill()
+                self.circle(grid.crownRadius,360,16)
+                self.end_fill()
+                self.up()
+
+
+class Board:
+    def __init__(self,screen, main=False):
+        self.screen = screen
+        self.matrix = None
+        self.createGrid()
+        self.highlightedSpaces = []
+        self.spaceSelected = False
+        self.turn = PLAYERS.NONE.value
     #create the matrix that stores the game data
     def createGrid(self):
         #create empty matrix
+        if not main: 
+            return
         self.matrix = [[None]*8,[None]*8,[None]*8,[None]*8,[None]*8,[None]*8,[None]*8,[None]*8]
 
         #populate matrix with grid objects and assign them attributes
@@ -61,145 +209,12 @@ class checkers:
                     if(y in [5,6,7]):
                         self.matrix[x][y].pawn = True
                         self.matrix[x][y].player = 2
-                self.matrix[x][y].draw()
-
+                if main:
+                    self.matrix[x][y].draw()
+            
         #create list to hold values of highlighted spaces
         self.highlightedSpaces = []
         self.spaceSelected = False
-
-    #creates text to display game information such as the current turn
-    def createTitles(self):
-        self.text0 = titles(self.screen)
-        self.text1 = titles(self.screen)
-        self.text0.writeTitle()
-        self.text1.writeTurn(self.turn)
-
-    #this funcion is called whenever the window is clicked
-    def mouseEvent(self,pixelX,pixelY):
-        x = int((pixelX + 4*grid.gridSize) // grid.gridSize)
-        y = int((pixelY + 4*grid.gridSize) // grid.gridSize)
-        if(onGrid(x,y) == True):
-            logToConsole("Mouse Event at coords (%s,%s)" % (x,y))
-
-            #if grid clicked contains a pawn and the current player it, highlight it's possible moves
-            if((self.matrix[x][y].pawn == True) and (self.matrix[x][y].player == self.turn)):
-                if(self.spaceSelected != 0):
-                    self.deselectAll()
-                moves = self.findMoves(x,y)
-                jumps = self.findJumps(x,y)
-                for move in moves:
-                    self.matrix[move[0]][move[1]].selected = 1
-                    self.highlightedSpaces.append((move[0],move[1]))
-                    self.matrix[move[0]][move[1]].draw()
-                for move in jumps:
-                    self.matrix[move[0]][move[1]].selected = 2
-                    self.highlightedSpaces.append((move[0],move[1]))
-                    self.matrix[move[0]][move[1]].draw()
-                self.spaceSelected = (x,y)
-                logToConsole("\tMoves Highlighted for pawn at (%s,%s)" % (x,y))
-
-            #if grid clicked can be moved too, move the selected pawn
-            elif(self.matrix[x][y].selected == 1):
-                self.movePawn(self.spaceSelected,(x,y))
-                self.deselectAll()
-                self.endTurn()
-
-            #if grid clicked can be jumped too, jump the selected pawn
-            elif(self.matrix[x][y].selected == 2):
-                self.jumpPawn(self.spaceSelected,(x,y))
-                jumps = self.findJumps(x,y)
-                if(jumps != []):
-                    self.deselectAll()
-                    self.spaceSelected = (x,y)
-                    for move in jumps:
-                        self.matrix[move[0]][move[1]].selected = 2
-                        self.highlightedSpaces.append((move[0],move[1]))
-                        self.matrix[move[0]][move[1]].draw()
-                else:
-                    self.deselectAll()
-                    self.endTurn()
-            else:
-                self.deselectAll()
-            self.checkWinner()
-            logToConsole("\tMouse Event completed\n")
-    def checkWinner(self):
-        player1_pawns, player2_pawns = 0, 0
-        player1_moves, player2_moves = False, False
-        for row in self.matrix:
-            for cell in row:
-                if cell.pawn:
-                    if cell.player == 1:
-                        player1_pawns += 1
-                        if not player1_moves:  # Check if moves are already found
-                            player1_moves = len(self.findMoves(cell.x, cell.y)) > 0 or len(self.findJumps(cell.x, cell.y)) > 0
-                    elif cell.player == 2:
-                        player2_pawns += 1
-                        if not player2_moves:  # Check if moves are already found
-                            player2_moves = len(self.findMoves(cell.x, cell.y)) > 0 or len(self.findJumps(cell.x, cell.y)) > 0
-        if player1_pawns == 0 or (player1_pawns == 1 and not player1_moves):
-            logToConsole("Player 2 Wins!")
-            return 2
-        elif player2_pawns == 0 or (player2_pawns == 1 and not player2_moves):
-            logToConsole("Player 1 Wins!")
-            return 1
-        else:
-            return 0
-    #deselects all of the selected grid spaces
-    def deselectAll(self):
-        for space in self.highlightedSpaces:
-            self.matrix[space[0]][space[1]].selected = 0
-            self.matrix[space[0]][space[1]].draw()
-        self.spaceSelected = False
-        logToConsole("\tAll Spaces Un-highlited")
-
-    #returns moves available to a pawn at (x, y)
-    def findMoves(self,x,y):
-        if(self.matrix[x][y].player == 1):
-            moves = [(-1,1),(1,1)]
-            if(self.matrix[x][y].king == 1):
-                moves += [(-1,-1),(1,-1)]
-
-        elif(self.matrix[x][y].player == 2):
-            moves = [(-1,-1),(1,-1)]
-            if(self.matrix[x][y].king == 1):
-                moves += [(-1,1),(1,1)]
-
-        coords = []
-        for move in moves:
-            x1 = x + move[0]
-            y1 = y + move[1]
-            if((onGrid(x1,y1) == True) and (self.matrix[x1][y1].pawn == False)):
-                coords.append((x1,y1))
-        print(coords)
-        return coords
-
-    #returns coords of jumps available to a pawn at coords (x, y)
-    def findJumps(self,x,y):
-        if(self.matrix[x][y].player == 1):
-            moves = [(-1,1),(1,1)]
-            if(self.matrix[x][y].king == 1):
-                moves += [(-1,-1),(1,-1)]
-
-        elif(self.matrix[x][y].player == 2):
-            moves = [(-1,-1),(1,-1)]
-            if(self.matrix[x][y].king == 1):
-                moves += [(-1,1),(1,1)]
-
-        coords = []
-        for move in moves:
-            x1 = x + move[0]
-            y1 = y + move[1]
-            x2 = x + 2*move[0]
-            y2 = y + 2*move[1]
-            if((onGrid(x2,y2) == True) and (self.matrix[x2][y2].pawn == False)):
-                if((self.matrix[x1][y1].pawn == True)):
-                    if((self.matrix[x][y].player == 1) and (self.matrix[x1][y1].player == 2)):
-                        coords.append((x2,y2))
-                    elif((self.matrix[x][y].player == 2) and (self.matrix[x1][y1].player == 1)):
-                        coords.append((x2,y2))
-        print("jumbps: ",coords)
-        return coords
-
     #moves a pawn from gridA to gridB
     def movePawn(self,gridA,gridB):
         self.matrix[gridB[0]][gridB[1]].importPawn(self.matrix[gridA[0]][gridA[1]])
@@ -225,17 +240,218 @@ class checkers:
         elif((self.matrix[x][y].player == 2) and (y == 0)):
             self.matrix[x][y].king = True
             self.matrix[x][y].draw()
-            logToConsole("\tPawn at (%s,%s) was Kinged" % (x,y))
+            logToConsole("\tPawn at (%s,%s) was Kinged" % (x,y))  
+    
+    #returns moves available to a pawn at (x, y)
+    def findMoves(self,x,y):
+        if(self.matrix[x][y].player == 1):
+            moves = [(-1,1),(1,1)]
+            if(self.matrix[x][y].king == 1):
+                moves += [(-1,-1),(1,-1)]
+
+        elif(self.matrix[x][y].player == 2):
+            moves = [(-1,-1),(1,-1)]
+            if(self.matrix[x][y].king == 1):
+                moves += [(-1,1),(1,1)]
+
+        coords = []
+        for move in moves:
+            x1 = x + move[0]
+            y1 = y + move[1]
+            if((onGrid(x1,y1) == True) and (self.matrix[x1][y1].pawn == False)):
+                coords.append((x1,y1))
+       
+        return coords
+    def updateBoard(self, move):
+        x, y = move["move_coords"]
+        self.spaceSelected = (x,y)
+    
+        if(not move["is_jump"]):
+                self.movePawn(move["pawn_coords"], self.spaceSelected)
+                self.deselectAll()
+                self.endTurn()
+        #if grid clicked can be jumped too, jump the selected pawn
+        elif(move["is_jump"]):
+                self.jumpPawn(move["pawn_coords"], self.spaceSelected)
+                jumps = self.findJumps(x,y)
+                if(jumps != []):
+                    self.deselectAll()
+                    self.spaceSelected = (x,y)
+                    for move in jumps:
+                        self.matrix[move[0]][move[1]].selected = 2
+                        self.highlightedSpaces.append((move[0],move[1]))
+                        self.matrix[move[0]][move[1]].draw()
+                else:
+                    self.deselectAll()
+                    self.endTurn()
+        else:
+                self.deselectAll()
+            
+    #returns coords of jumps available to a pawn at coords (x, y)
+    def findJumps(self,x,y):
+        if(self.matrix[x][y].player == 1):
+            moves = [(-1,1),(1,1)]
+            if(self.matrix[x][y].king == 1):
+                moves += [(-1,-1),(1,-1)]
+
+        elif(self.matrix[x][y].player == 2):
+            moves = [(-1,-1),(1,-1)]
+            if(self.matrix[x][y].king == 1):
+                moves += [(-1,1),(1,1)]
+
+        coords = []
+        for move in moves:
+            x1 = x + move[0]
+            y1 = y + move[1]
+            x2 = x + 2*move[0]
+            y2 = y + 2*move[1]
+            if((onGrid(x2,y2) == True) and (self.matrix[x2][y2].pawn == False)):
+                if((self.matrix[x1][y1].pawn == True)):
+                    if((self.matrix[x][y].player == 1) and (self.matrix[x1][y1].player == 2)):
+                        coords.append((x2,y2))
+                    elif((self.matrix[x][y].player == 2) and (self.matrix[x1][y1].player == 1)):
+                        coords.append((x2,y2))
+       
+        return coords
+    def findAvailableMovements (self, player):
+        movements_coords = {"moves": [], "jumps": []}
+        for x in range(8):
+            for y in range(8):
+                    if (self.matrix[x][y].player == player and self.matrix[x][y].pawn):
+                        move_coords = self.findMoves(x, y)
+                        jumps_coords = self.findJumps(x, y)
+                        if len(move_coords) or len(jumps_coords):
+                            movements_coords["moves"].extend([{"move_coords": (mov_x, mov_y), "pawn_coords": (x, y), "is_jump": False} for (mov_x, mov_y) in move_coords])
+                            movements_coords["jumps"].extend([{"move_coords": (mov_x, mov_y), "pawn_coords": (x, y), "is_jump": True} for (mov_x, mov_y) in jumps_coords])
+        return movements_coords
+    #deselects all of the selected grid spaces
+    
+    def deselectAll(self):
+        for space in self.highlightedSpaces:
+            self.matrix[space[0]][space[1]].selected = 0
+            self.matrix[space[0]][space[1]].draw()
+        self.spaceSelected = False
+        logToConsole("\tAll Spaces Un-highlited")
+    def checkWinner(self):
+        return False
 
     #ends the current turn
     def endTurn(self):
-        if(self.turn == 1):
+      
+        if(self.turn == PLAYERS.RED.value):
             logToConsole("\tRed Player's turn has ended")
-            self.turn = 2
-        elif(self.turn == 2):
+            self.turn = PLAYERS.BLUE.value
+        elif(self.turn == PLAYERS.BLUE.value):
             logToConsole("\tBlue Player's turn has ended")
-            self.turn = 1
-        self.text1.writeTurn(self.turn)
+            self.turn = PLAYERS.RED.value
+                        
+                      
+#main game class
+class CheckersGame:
+
+    #create game instance
+    def __init__(self,screen):
+        self.screen = screen
+        self.player1 = PLAYERS.NONE.value
+        self.player2 = PLAYERS.NONE.value
+        self.resetGame()
+       
+
+    #resets the matrix that stores game data
+    def resetGame(self):
+        self.board = Board(self.screen, main=True)
+        self.board.turn = randint(PLAYERS.RED.value,PLAYERS.BLUE.value) #1 for red, 2 for blue
+        self.createTitles()
+        logToConsole("\tStarting Player: %s" % (self.board.turn))
+        self.player1 = self.chooseAgent(PLAYERS.RED.value)
+        self.player2 = self.chooseAgent(PLAYERS.BLUE.value)
+        logToConsole("\tAgents has been chosen")
+        self.move()
+
+    def move (self):
+        movement = None
+        """ if self.board.checkWinner():
+                return """
+       
+        if (self.board.turn == PLAYERS.RED.value and self.player1.name is not AgentsNames.YOURSELF.value):
+            movement = self.player1.move()
+        if (self.board.turn == PLAYERS.BLUE.value and self.player2.name is not AgentsNames.YOURSELF.value):
+            movement = self.player2.move()
+       
+        if movement:
+            self.board.updateBoard(movement)
+            self.move()
+            self.text1.writeTurn(self.board.turn)
+
+    def chooseAgent(self, player):
+        print(f"Choose Agent for player {player}: ")
+        option = int(input("1. Yourself 2. Random (Default Minimax): "))
+        if option == 1:
+            return YourselfAgent(self.board)
+        elif option == 2:
+            return RandomAgent(self.board, player)
+        else: 
+            return MiniMaxAgent(self.board)
+    
+    #this funcion is called whenever the window is clicked
+    def mouseEvent (self,pixelX,pixelY):
+        x = int((pixelX + 4*grid.gridSize) // grid.gridSize)
+        y = int((pixelY + 4*grid.gridSize) // grid.gridSize)
+        if(onGrid(x,y) == True):
+            logToConsole("Mouse Event at coords (%s,%s)" % (x,y))
+
+            #if grid clicked contains a pawn and the current player it, highlight it's possible moves
+            if((self.board.matrix[x][y].pawn == True) and (self.board.matrix[x][y].player == self.board.turn)):
+                if(self.board.spaceSelected != 0):
+                    self.board.deselectAll()
+                moves = self.board.findMoves(x,y)
+                jumps = self.board.findJumps(x,y)
+                for move in moves:
+                    self.board.matrix[move[0]][move[1]].selected = 1
+                    self.board.highlightedSpaces.append((move[0],move[1]))
+                    self.board.matrix[move[0]][move[1]].draw()
+                for move in jumps:
+                    self.board.matrix[move[0]][move[1]].selected = 2
+                    self.board.highlightedSpaces.append((move[0],move[1]))
+                    self.board.matrix[move[0]][move[1]].draw()
+                self.board.spaceSelected = (x,y)
+                logToConsole("\tMoves Highlighted for pawn at (%s,%s)" % (x,y))
+
+            #if grid clicked can be moved too, move the selected pawn
+            elif(self.board.matrix[x][y].selected == 1):
+                self.board.movePawn(self.board.spaceSelected,(x,y))
+                self.board.deselectAll()
+                self.board.endTurn()
+                self.move()
+
+            #if grid clicked can be jumped too, jump the selected pawn
+            elif(self.board.matrix[x][y].selected == 2):
+                self.board.jumpPawn(self.board.spaceSelected,(x,y))
+                jumps = self.board.findJumps(x,y)
+                if(jumps != []):
+                    self.board.deselectAll()
+                    self.board.spaceSelected = (x,y)
+                    for move in jumps:
+                        self.board.matrix[move[0]][move[1]].selected = 2
+                        self.board.highlightedSpaces.append((move[0],move[1]))
+                        self.board.matrix[move[0]][move[1]].draw()
+                else:
+                    self.board.deselectAll()
+                    self.board.endTurn()
+                    self.move()
+            else:
+                self.board.deselectAll()
+            
+            logToConsole("\tMouse Event completed\n")
+        
+    
+    #creates text to display game information such as the current turn
+    def createTitles(self):
+        self.text0 = titles(self.screen)
+        self.text1 = titles(self.screen)
+        self.text0.writeTitle()
+        self.text1.writeTurn(self.board.turn)
+
 
 #class that writes text on the screen
 class titles(turtle.RawTurtle):
@@ -285,108 +501,12 @@ class titles(turtle.RawTurtle):
         self.goto(0,-5*grid.gridSize)
         self.write(string,align="center",font=("Arial",20,"normal"))
 
-#class that defines a grid space and its properties
-class grid(turtle.RawTurtle):
-
-    #variables that set the grids size
-    gridSize = 60
-    pawnRadius = 20
-    crownRadius = 10
-
-    #create grid space and give it default attributes
-    def __init__(self,screen):
-        self.screen = screen
-        self.defaultAttributes()
-        self.createPen()
-
-    #creates the turtle that will draw the grid space
-    def createPen(self):
-        super(grid,self).__init__(self.screen)
-        self.hideturtle()
-        self.speed(0)
-        self.width(3)
-        self.up()
-
-    #sets the grid's attributes
-    def defaultAttributes(self):
-        self.gridX = 0
-        self.gridY = 0
-        self.colored = False #True if the square is shaded, False if white
-        self.selected = 0 #0 if space is normal, 1 or 2 if space is highlighted
-        self.pawn = False #True if there is a pawn on the grid space
-        self.player = 0 #1 if pawn is player1 (red), 2 if pawn is player2 (blue)
-        self.king = False #True if pawn has been kinged
-
-    #removes the pawn from the grid
-    def clearPawn(self):
-        self.selected = False
-        self.pawn = False
-        self.player = 0
-        self.king = False
-        self.draw()
-
-    #imports all attributes from another grid object
-    def importPawn(self,gridObj):
-        self.colored = gridObj.colored
-        self.pawn = gridObj.pawn
-        self.player = gridObj.player
-        self.king = gridObj.king
-        self.draw()
-
-    #places the grid at a new set of coords
-    def moveGrid(self,gX,gY):
-        self.gridX = gX
-        self.gridY = gY
-
-    #draws the grid
-    def draw(self):
-        pixleX = int(self.gridX*grid.gridSize - 4*grid.gridSize)
-        pixleY = int(self.gridY*grid.gridSize - 4*grid.gridSize)
-        self.clear()
-
-        self.goto(pixleX,pixleY)
-        self.seth(0)
-        self.down()
-        if(self.colored == True):
-            if(self.selected in [1,2]):
-                self.color((0,0,0),(0.5,1,0.5))
-            else:    
-                self.color((0,0,0),(0.75,0.75,0.75))
-            self.begin_fill()
-        for f in range(4):
-            self.fd(grid.gridSize)
-            self.left(90)
-        self.end_fill()
-        self.up()
-
-        if(self.pawn == True):
-            self.goto(pixleX + 0.5*grid.gridSize,pixleY + 0.5*grid.gridSize - grid.pawnRadius)
-            if(self.player == 1):
-                self.color((0,0,0),(1,0.5,0.5))
-            elif(self.player == 2):
-                self.color((0,0,0),(0.5,0.5,1))
-            else:
-                self.color((0,0,0),(1,0.5,1))
-            self.down()
-            self.begin_fill()
-            self.circle(grid.pawnRadius,360,16)
-            self.end_fill()
-            self.up()
-
-            if(self.king == True):
-                self.goto(pixleX + 0.5*grid.gridSize,pixleY + 0.5*grid.gridSize - grid.crownRadius)
-                self.color((0,0,0),(1,0.85,0))
-                self.down()
-                self.begin_fill()
-                self.circle(grid.crownRadius,360,16)
-                self.end_fill()
-                self.up()
 
 def main():
     #creates game instance
     logToConsole("Program Starting...")
     logToConsole("Running Game: ",gameTitle)
-    game = checkers(wn)
+    game = CheckersGame(wn)
 
     #attach mouseEvent to click
     wn.onclick(game.mouseEvent)
