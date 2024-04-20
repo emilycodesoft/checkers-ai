@@ -4,6 +4,7 @@ from datetime import datetime
 from random import randint, choice
 from enum import Enum
 from time import sleep
+import os
 
 gameTitle = "pyCheckers v1.00"
 class AgentsNames(Enum):
@@ -26,8 +27,13 @@ class PLAYERS(Enum):
 
 #setup output window
 wn = turtle.Screen()
+wn.setup(width = 1200, height = 700)
+wn.bgcolor("black")
 wn.tracer(0,0)
 wn.title(gameTitle)
+
+def clearScreen():
+    os.system('cls' if os.name == 'nt' else 'clear')
 
 #checks to see if coordinates (x, y) are on the board
 def onGrid(x,y):
@@ -333,6 +339,20 @@ class Board:
         self.spaceSelected = False
         logToConsole("\tAll Spaces Un-highlited")
     def checkWinner(self):
+        red_pawns = 0
+        blue_pawns = 0
+        for x in range(8):
+            for y in range(8):
+                if self.matrix[x][y].player == PLAYERS.RED.value:
+                    red_pawns += 1
+                elif self.matrix[x][y].player == PLAYERS.BLUE.value:
+                    blue_pawns += 1
+        if red_pawns == 0:
+            return PLAYERS.BLUE
+        elif blue_pawns == 0:
+            return PLAYERS.RED
+        elif red_pawns == 1 and blue_pawns == 1:
+            return PLAYERS.NONE
         return False
 
     #ends the current turn
@@ -354,42 +374,73 @@ class CheckersGame:
         self.screen = screen
         self.player1 = PLAYERS.NONE.value
         self.player2 = PLAYERS.NONE.value
+        self.show_moves_gui = False
+        self.iterations = 1
+        self.repeating = False
         self.resetGame()
-       
 
     #resets the matrix that stores game data
     def resetGame(self):
+        self.iterations -= 1
         self.board = Board(self.screen, main=True)
-        self.board.turn = randint(PLAYERS.RED.value,PLAYERS.BLUE.value) #1 for red, 2 for blue
+        self.board.turn = randint(PLAYERS.RED.value,PLAYERS.BLUE.value)
+
         self.createTitles()
         logToConsole("\tStarting Player: %s" % (self.board.turn))
-        self.player1 = self.chooseAgent(PLAYERS.RED.value)
-        self.player2 = self.chooseAgent(PLAYERS.BLUE.value)
+        if not self.repeating: 
+            self.menu()
+        clearScreen()
         logToConsole("\tAgents has been chosen")
         self.move()
 
+    def menu (self):
+        print("--------------------------MENU------------------------------------------")
+        self.player1 = self.chooseAgent(PLAYERS.RED)
+        clearScreen()
+        self.player2 = self.chooseAgent(PLAYERS.BLUE)
+        """  """
+        if (self.player1.name != AgentsNames.YOURSELF.name and self.player2.name != AgentsNames.YOURSELF.name):
+            option = int(input("¿DESEA VER LOS MOVIMIENTOS EN LA PANTALLA? 1. SI 2. NO: "))
+            if option == 1:
+                self.show_moves_gui = True
+        self.iterations = int(input("¿CUANTAS ITERACIONES DESEA JUGAR?: "))
+        if(self.iterations > 1):
+            self.repeating = True
+        self.text1.writeTurn(self.board.turn)
+
     def move (self):
-        movement = None
-        """ if self.board.checkWinner():
-                return """
-       
-        if (self.board.turn == PLAYERS.RED.value and self.player1.name is not AgentsNames.YOURSELF.value):
-            movement = self.player1.move()
-        if (self.board.turn == PLAYERS.BLUE.value and self.player2.name is not AgentsNames.YOURSELF.value):
-            movement = self.player2.move()
-       
-        if movement:
-            self.board.updateBoard(movement)
-            self.move()
-            self.text1.writeTurn(self.board.turn)
+            movement = None
+            isTerminal = self.board.checkWinner()
+            if isTerminal:
+                if (self.iterations > 1):
+                    if (self.show_moves_gui):
+                        sleep(5)
+                        self.screen.update()  # Actualiza la pantalla
+                self.text1.writeTurn(3, isTerminal)
+                self.resetGame()
+                return
+            if (self.board.turn == PLAYERS.RED.value and self.player1.name is not AgentsNames.YOURSELF.value):
+                movement = self.player1.move()   
+            if (self.board.turn == PLAYERS.BLUE.value and self.player2.name is not AgentsNames.YOURSELF.value):
+                movement = self.player2.move()
+            if movement:
+                self.board.updateBoard(movement)
+                if self.show_moves_gui:
+                    sleep(1)
+                    self.screen.update()  # Actualiza la pantalla
+                self.text1.writeTurn(self.board.turn)
+                return self.move()
 
     def chooseAgent(self, player):
-        print(f"Choose Agent for player {player}: ")
-        option = int(input("1. Yourself 2. Random (Default Minimax): "))
+        print(f"Choose Agent for player {player.name}: ")
+        options = [AgentsNames.YOURSELF.name, AgentsNames.RANDOM.name, AgentsNames.MINIMAX.name, AgentsNames.PODAMINIMAX.name, AgentsNames.QAGENT.name, AgentsNames.NEURALAGENT.name]
+        for i, option in enumerate(options):
+            print(f"{" "*7}{i+1}. {option}")
+        option = int(input("Choose an option: "))
         if option == 1:
             return YourselfAgent(self.board)
         elif option == 2:
-            return RandomAgent(self.board, player)
+            return RandomAgent(self.board, player.value)
         else: 
             return MiniMaxAgent(self.board)
     
@@ -449,8 +500,10 @@ class CheckersGame:
     def createTitles(self):
         self.text0 = titles(self.screen)
         self.text1 = titles(self.screen)
+        self.text2 = titles(self.screen)
+        self.text3 = titles(self.screen)
         self.text0.writeTitle()
-        self.text1.writeTurn(self.board.turn)
+        self.text1.writeTurn(0)
 
 
 #class that writes text on the screen
@@ -477,7 +530,7 @@ class titles(turtle.RawTurtle):
 
         self.clear()
         self.color("black")
-        self.goto(-4*grid.gridSize,4.8*grid.gridSize)
+        self.goto(-1100/2,600/2)
         self.write(line0,align="left",font=("Arial",20,"normal"))
         self.goto(4*grid.gridSize,5*grid.gridSize)
         self.write(line1,align="right",font=("Arial",14,"normal"))
@@ -487,7 +540,9 @@ class titles(turtle.RawTurtle):
         self.write(line3,align="right",font=("Arial",14,"normal"))
 
     #writes the current turn on the screen
-    def writeTurn(self,turn):
+    def writeTurn(self,turn, winner = None):
+        string = ""
+       
         if(turn == 1):
             string = "It's Red Player's Turn"
             self.color("red")
@@ -495,7 +550,15 @@ class titles(turtle.RawTurtle):
             string = "It's Blue Player's Turn"
             self.color("blue")
         elif(turn == 0):
-            string = "Turns are disabled"
+            string = "Choose the Agents in the terminal"
+        elif turn == 3:
+          
+            if (winner.value != 0):
+                self.color("orange")
+                string = f"{winner.name} wins!!!"
+            else: 
+                self.color("gray")
+                string = "It's draw"
 
         self.clear()
         self.goto(0,-5*grid.gridSize)
