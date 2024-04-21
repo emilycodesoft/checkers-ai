@@ -60,13 +60,33 @@ class Agent:
         self.board = board
 
 class MiniMaxAgent:
-    def __init__(self, board):
+    def __init__(self, board, depth = 0):
         self.name = AgentsNames.MINIMAX.value
         self.board = board
+        self.depth = depth
     def move(self):
         return self.findBestMove()
-    def findBestMove(self):
+    def findBestMove(self, board, maximizing = True, depth = 0):
         pass
+        """ if(depth == 0) self.nodesMap.clear();
+
+        if(board.checkWinner() or depth == self.maxDepth ):
+                if(board.checkWinner().value == PLAYERS.RED.value) :
+                    return 100 - depth;
+                elif (board.checkWinner().value == PLAYERS.BLUE.value) :
+                    return -100 + depth;
+                return 0;
+        if (maximizing):
+            # Initialize best to the lowest possible value
+            best = -100;
+            # Loop through all empty cells
+            for i in enumerate(board.findAvailableMovements(PLAYERS.RED.value)):
+                child = Board(matrix=board.matrix.copy())
+                child.updateBoard()
+                nodeValue = self.findBestMove(child, False, depth + 1);
+                best = max(best, nodeValue); """
+                
+
 
 class RandomAgent:
     def __init__(self, board, player):
@@ -188,9 +208,9 @@ class grid(turtle.RawTurtle):
 
 
 class Board:
-    def __init__(self,screen, main=False):
+    def __init__(self,screen, matrix = None, main=False):
         self.screen = screen
-        self.matrix = None
+        self.matrix = matrix
         self.createGrid()
         self.highlightedSpaces = []
         self.spaceSelected = False
@@ -366,6 +386,71 @@ class Board:
             self.turn = PLAYERS.RED.value
                         
                       
+
+
+#class that writes text on the screen
+class titles(turtle.RawTurtle):
+
+    def __init__(self,screen):
+        self.screen = screen
+        self.createPen()
+
+    #creates the turtle that will write the text
+    def createPen(self):
+        super(titles,self).__init__(self.screen)
+        self.hideturtle()
+        self.speed(0)
+        self.width(3)
+        self.up()
+
+    #writes the game title and how to play
+    def writeTitle(self):
+        line0 = gameTitle
+        line1 = "Click a pawn to see its possible moves"
+        line2 = "Capture enemy pawns by jumping over them"
+        line3 = "The player with the last pawn Wins"
+
+        self.clear()
+        self.color("black")
+        self.goto(-1100/2,600/2)
+        self.write(line0,align="left",font=("Arial",20,"normal"))
+        self.goto(4*grid.gridSize,5*grid.gridSize)
+        self.write(line1,align="right",font=("Arial",14,"normal"))
+        self.goto(4*grid.gridSize,4.75*grid.gridSize)
+        self.write(line2,align="right",font=("Arial",14,"normal"))
+        self.goto(4*grid.gridSize,4.5*grid.gridSize)
+        self.write(line3,align="right",font=("Arial",14,"normal"))
+
+    #writes the current turn on the screen
+    def writeTurn(self,turn, winner = None):
+        string = ""
+       
+        if(turn == 1):
+            string = "It's Red Player's Turn"
+            self.color("red")
+        elif(turn == 2):
+            string = "It's Blue Player's Turn"
+            self.color("blue")
+        elif(turn == 0):
+            string = "Choose the Agents in the terminal"
+        elif turn == 3:
+          
+            if (winner.value != 0):
+                self.color("orange")
+                string = f"{winner.name} wins!!!"
+            else: 
+                self.color("gray")
+                string = "It's draw"
+
+        self.clear()
+        self.goto(0,-5*grid.gridSize)
+        self.write(string,align="center",font=("Arial",20,"normal"))
+
+
+class Player:
+    def __init__(self) -> None:
+        pass
+
 #main game class
 class CheckersGame:
 
@@ -377,18 +462,27 @@ class CheckersGame:
         self.show_moves_gui = False
         self.iterations = 1
         self.repeating = False
+        self.red_pawns = 0
+        self.blue_pawns = 0
         self.resetGame()
 
     #resets the matrix that stores game data
     def resetGame(self):
+        if self.iterations == 0:
+            return
         self.iterations -= 1
         self.board = Board(self.screen, main=True)
+        self.screen.update()  # Actualiza la pantalla
         self.board.turn = randint(PLAYERS.RED.value,PLAYERS.BLUE.value)
-
-        self.createTitles()
+        # self.board.turn = choice([p for p in PLAYERS])
+        print(PLAYERS)
         logToConsole("\tStarting Player: %s" % (self.board.turn))
         if not self.repeating: 
+            self.createTitles()
             self.menu()
+        else:
+            self.player1.board = self.board
+            self.player2.board = self.board
         clearScreen()
         logToConsole("\tAgents has been chosen")
         self.move()
@@ -408,28 +502,36 @@ class CheckersGame:
             self.repeating = True
         self.text1.writeTurn(self.board.turn)
 
+    def currentPlayer (self):
+        if(self.board.turn == 1):
+            return self.player1.name
+        else: 
+            return self.player2.name
+
     def move (self):
-            movement = None
-            isTerminal = self.board.checkWinner()
-            if isTerminal:
-                if (self.iterations > 1):
-                    if (self.show_moves_gui):
-                        sleep(5)
+            while self.currentPlayer() != AgentsNames.YOURSELF.value:
+                movement = None
+                isTerminal = self.board.checkWinner()
+                if isTerminal:
+                    self.text1.writeTurn(3, isTerminal)
+                    if (self.iterations > 1):
+                        if (self.show_moves_gui):
+                            sleep(5)
+                            self.screen.update()  # Actualiza la pantalla
+                    self.resetGame()
+                    
+                    break
+                if (self.board.turn == PLAYERS.RED.value and self.player1.name != AgentsNames.YOURSELF.value):
+                    movement = self.player1.move()   
+                if (self.board.turn == PLAYERS.BLUE.value and self.player2.name != AgentsNames.YOURSELF.value):
+                    movement = self.player2.move()
+                if movement:
+                    self.board.updateBoard(movement)
+                    if self.show_moves_gui:
+                        sleep(1)
                         self.screen.update()  # Actualiza la pantalla
-                self.text1.writeTurn(3, isTerminal)
-                self.resetGame()
-                return
-            if (self.board.turn == PLAYERS.RED.value and self.player1.name is not AgentsNames.YOURSELF.value):
-                movement = self.player1.move()   
-            if (self.board.turn == PLAYERS.BLUE.value and self.player2.name is not AgentsNames.YOURSELF.value):
-                movement = self.player2.move()
-            if movement:
-                self.board.updateBoard(movement)
-                if self.show_moves_gui:
-                    sleep(1)
-                    self.screen.update()  # Actualiza la pantalla
-                self.text1.writeTurn(self.board.turn)
-                return self.move()
+                    self.text1.writeTurn(self.board.turn)
+                    # return self.move()
 
     def chooseAgent(self, player):
         print(f"Choose Agent for player {player.name}: ")
@@ -506,69 +608,11 @@ class CheckersGame:
         self.text1.writeTurn(0)
 
 
-#class that writes text on the screen
-class titles(turtle.RawTurtle):
-
-    def __init__(self,screen):
-        self.screen = screen
-        self.createPen()
-
-    #creates the turtle that will write the text
-    def createPen(self):
-        super(titles,self).__init__(self.screen)
-        self.hideturtle()
-        self.speed(0)
-        self.width(3)
-        self.up()
-
-    #writes the game title and how to play
-    def writeTitle(self):
-        line0 = gameTitle
-        line1 = "Click a pawn to see its possible moves"
-        line2 = "Capture enemy pawns by jumping over them"
-        line3 = "The player with the last pawn Wins"
-
-        self.clear()
-        self.color("black")
-        self.goto(-1100/2,600/2)
-        self.write(line0,align="left",font=("Arial",20,"normal"))
-        self.goto(4*grid.gridSize,5*grid.gridSize)
-        self.write(line1,align="right",font=("Arial",14,"normal"))
-        self.goto(4*grid.gridSize,4.75*grid.gridSize)
-        self.write(line2,align="right",font=("Arial",14,"normal"))
-        self.goto(4*grid.gridSize,4.5*grid.gridSize)
-        self.write(line3,align="right",font=("Arial",14,"normal"))
-
-    #writes the current turn on the screen
-    def writeTurn(self,turn, winner = None):
-        string = ""
-       
-        if(turn == 1):
-            string = "It's Red Player's Turn"
-            self.color("red")
-        elif(turn == 2):
-            string = "It's Blue Player's Turn"
-            self.color("blue")
-        elif(turn == 0):
-            string = "Choose the Agents in the terminal"
-        elif turn == 3:
-          
-            if (winner.value != 0):
-                self.color("orange")
-                string = f"{winner.name} wins!!!"
-            else: 
-                self.color("gray")
-                string = "It's draw"
-
-        self.clear()
-        self.goto(0,-5*grid.gridSize)
-        self.write(string,align="center",font=("Arial",20,"normal"))
-
-
 def main():
-    #creates game instance
+
     logToConsole("Program Starting...")
     logToConsole("Running Game: ",gameTitle)
+    #creates game instance
     game = CheckersGame(wn)
 
     #attach mouseEvent to click
