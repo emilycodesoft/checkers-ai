@@ -9,6 +9,9 @@ from game.Titles import titles
 from agents.YourselfAgent import YourselfAgent
 from enums import PLAYERS, AgentsNames
 from utils import clearScreen, logToConsole, onGrid
+import matplotlib.pyplot as plt
+import numpy as np
+import turtle
 
 
 class CheckersGame:
@@ -19,19 +22,43 @@ class CheckersGame:
         self.player1 = PLAYERS.NONE.value
         self.player2 = PLAYERS.NONE.value
         self.show_moves_gui = False
-        self.iterations = 1
+        self.iterations = 0
         self.repeating = False
+        self.blueWins = []
+        self.redWins = []
+        self.draws = []
         self.resetGame()
 
+    def calcPercentageOfWins(self, p_wins):
+        return p_wins.count(1)/self.iterations*100
     #resets the matrix that stores game data
-    def showStatistics():
-        pass
+    def showStatistics(self):
+        #plot the results
+
+        #for player 1 and 2 find the cumulative sum 
+        # print(self.blueWins, self.redWins, self.draws)
+        labels = [f'Red Wins ({self.player1.name})', f'Blue Wins ({self.player2.name})', 'Draws']
+        sizes = [self.calcPercentageOfWins(self.redWins), self.calcPercentageOfWins(self.blueWins), self.calcPercentageOfWins(self.draws)]
+        colors = ['red', 'blue', 'gray',]
+
+   
+
+        # Manejar el caso de valores cero
+        explode = (0.1, 0.1, 0.1)  # only "explode" the 2nd slice (i.e. 'Hogs')
+        plt.figure(figsize=(6, 6))  # Tamaño de la figura
+        plt.pie(sizes, labels=labels, colors=colors, explode=explode, autopct='%1.1f%%', startangle=140)
+
+        # Añadir una leyenda
+        plt.title('Distribution of Wins')
+
+        # Mostrar el diagrama de pastel
+        plt.axis('equal')  # Hacer que el pastel se vea como un círculo
+        plt.show()
+
     def resetGame(self):
-        if self.iterations == 0:
-            self.showStatistics()
         self.iterations -= 1
-        self.board = Board(self.screen, main=True)
-        
+        self.board = Board(main=True)
+        self.board.createGrid()
         self.screen.update()  # Actualiza la pantalla
         self.board.turn = randint(PLAYERS.RED.value,PLAYERS.BLUE.value)
 
@@ -42,6 +69,7 @@ class CheckersGame:
         else:
             self.player1.board = self.board
             self.player2.board = self.board
+        
         clearScreen()
         logToConsole("\tAgents has been chosen")
         self.move()
@@ -64,7 +92,7 @@ class CheckersGame:
         if(self.iterations > 1):
             self.repeating = True
 
-        self.text1.writeTurn(self.board.turn)
+        self.text1.writeTurn(self.board.turn, self.currentPlayer())
 
     def currentPlayer (self):
         if(self.board.turn == 1):
@@ -76,53 +104,63 @@ class CheckersGame:
             while self.currentPlayer() != AgentsNames.YOURSELF.value:
                 movement = None
                 winner = self.board.checkWinner()
-
+                score = None
                 if winner:
-                    self.text1.writeTurn(3, winner)
-                    #create a function
-                    if (self.iterations > 1 and self.show_moves_gui):
-                            sleep(3)
+                    self.text1.writeTurn(3, playerName=self.currentPlayer(), winner=winner)
+                    self.screen.update()  # Actualiza la pantalla
+                    if (winner.value == PLAYERS.RED.value):
+                        self.redWins.append(1)
+                        self.blueWins.append(0)
+                        self.draws.append(0)
+                    if (winner.value == PLAYERS.BLUE.value):
+                        self.redWins.append(0)
+                        self.blueWins.append(1)
+                        self.draws.append(0)
+                    if (winner.value == PLAYERS.DRAW.value):
+                        self.redWins.append(0)
+                        self.blueWins.append(0)
+                        self.draws.append(1)
+                    if (self.repeating and  self.iterations > 1):
+                            if self.show_moves_gui:
+                                sleep(3)
                             self.resetGame()
-                            self.screen.update()  # Actualiza la pantalla
+                    else:
+                        return
                     break
-                         
+                print(winner)
                 if (self.board.turn == PLAYERS.RED.value):
-                    if self.player1.name == AgentsNames.MINIMAX.value:
-                        what = self.player1.move(self.screen, self.board, PLAYERS.RED.value)
-                        print("WHAT: ", what)
-                        # print("MINIMAX MOVEMENTS: ",self.player1.nodesMap)
-                        # candidate = choice(self.player1.nodesMap)
-                        candidate = choice(what)
-                        movement = candidate[1]
                     
+                    if self.player1.name == AgentsNames.MINIMAX.value:
+                        score, movement = self.player1.move(self.board, PLAYERS.RED.value)
+                        # self.screen.update() 
+                       
                     else: 
                         movement = self.player1.move()
                     
                 elif (self.board.turn == PLAYERS.BLUE.value):
 
                     if self.player2.name == AgentsNames.MINIMAX.value:
-                        what = self.player2.move(self.screen, self.board, PLAYERS.BLUE.value)
-                        print("WHAT: ", what)
-                        # print("MINIMAX MOVEMENTS: ",self.player2.nodesMap)
-                        # candidate = choice(self.player2.nodesMap)
-                        candidate = choice(what)
-                        movement = candidate[1]
-
+                        score, movement = self.player2.move(self.board, PLAYERS.BLUE.value)
+                        # self.screen.update()  # Actualiza la pantalla
+                      
                     else: 
                         movement = self.player2.move()    
-                
+                print("score: ", score)
                 print("move: ", movement)
 
                 if movement:
                     self.board.updateBoard(movement)
-                    print(f"****************BOARD STATE: RED({self.board.redPawns}) y BLUE({self.board.bluePawns}) ***********************")
-                    if self.show_moves_gui:
-                        # sleep(1)
-                        # self.screen.delay(1000)
-                        self.screen.update()  # Actualiza la pantalla
-                    self.text1.writeTurn(self.board.turn)
-            print(f"****************BOARD STATE: RED({self.board.redPawns}) y BLUE({self.board.bluePawns}) ***********************")
+                    """ if self.show_moves_gui:
+                        self.screen.delay(1000) """
+                    self.board.drawBoard()
+                    # self.board.endTurn()
+                    self.text1.writeTurn(self.board.turn, self.currentPlayer())
+                    self.screen.update()  # Actualiza la pantalla
 
+                self.showBoardState()
+    
+    def showBoardState(self):
+        print(f"BOARD STATE: RED({self.board.redPawns}) y BLUE({self.board.bluePawns})")
     def chooseAgent(self, player):
         print(f"Choose Agent for player {player.name}: ")
 
@@ -159,6 +197,7 @@ class CheckersGame:
                 for move in jumps:
                     self.board.matrix[move[0]][move[1]].selected = 2
                     self.board.highlightedSpaces.append((move[0],move[1]))
+                    
                     self.board.matrix[move[0]][move[1]].draw()
                 self.board.spaceSelected = (x,y)
                 logToConsole("\tMoves Highlighted for pawn at (%s,%s)" % (x,y))
@@ -168,6 +207,9 @@ class CheckersGame:
                 self.board.movePawn(self.board.spaceSelected,(x,y))
                 self.board.deselectAll()
                 self.board.endTurn()
+                self.text1.writeTurn(self.board.turn, self.currentPlayer())
+                self.board.drawBoard()
+                self.screen.update()
                 self.move()
 
             #if grid clicked can be jumped too, jump the selected pawn
@@ -188,14 +230,17 @@ class CheckersGame:
                         self.board.matrix[move[0]][move[1]].selected = 2
                         self.board.highlightedSpaces.append((move[0],move[1]))
                         self.board.matrix[move[0]][move[1]].draw()
+                        self.board.drawBoard()
+                        self.screen.update()
                 else:
                     self.board.deselectAll()
                     self.board.endTurn()
-                    self.move()
-                    
+                    self.text1.writeTurn(self.board.turn, self.currentPlayer())
+                    self.board.drawBoard()
+                    self.screen.update()
+                    self.move()          
             else:
                 self.board.deselectAll()
-            
             logToConsole("\tMouse Event completed\n")
         
     
@@ -207,4 +252,5 @@ class CheckersGame:
         self.text3 = titles(self.screen)
         self.text0.writeTitle()
         self.text1.writeTurn(0)
+        # self.text2.writeIterations(self.iterations)
 

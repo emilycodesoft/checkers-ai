@@ -20,3 +20,4 @@ class PLAYERS(Enum):
     RED = 1
     BLUE = 2
     NONE = 0
+    DRAW = 3

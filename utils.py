@@ -6,10 +6,7 @@ def clearScreen():
 
 #checks to see if coordinates (x, y) are on the board
 def onGrid(x,y):
-    if((x in range(8)) and (y in range(8))):
-        return True
-    else:
-        return False
+    return 0 <= x < 8 and 0 <= y < 8
 
 
 #prints a log string to the console

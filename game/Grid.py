@@ -4,6 +4,7 @@ from enums import PLAYERS
 gameTitle = "pyCheckers v1.00"
 
 
+screen = turtle.Screen()
 #class that defines a grid space and its properties
 class grid(turtle.RawTurtle):
     
@@ -12,22 +13,22 @@ class grid(turtle.RawTurtle):
     pawnRadius = 20
     crownRadius = 10
 
-    #create grid space and give it default attributes
-    def __init__(self,screen):
-        self.screen = screen
-        self.defaultAttributes()
+    #create grid space and give it default aselfributes
+    def __init__(self):
+        super(grid, self).__init__(screen)
+        self.defaultAselfributes()
         self.createPen()
 
     #creates the turtle that will draw the grid space
     def createPen(self):
-        super(grid,self).__init__(self.screen)
+        # super(grid,self).__init__(screen)
         self.hideturtle()
         self.speed(0)
         self.width(3)
         self.up()
 
-    #sets the grid's attributes
-    def defaultAttributes(self):
+    #sets the grid's aselfributes
+    def defaultAselfributes(self):
         self.gridX = 0
         self.gridY = 0
         self.colored = False #True if the square is shaded, False if white
@@ -37,22 +38,23 @@ class grid(turtle.RawTurtle):
         self.king = False #True if pawn has been kinged
 
     #removes the pawn from the grid
-    def clearPawn(self, main):
+    def clearPawn(self):
         self.selected = False
         self.pawn = False
         self.player = PLAYERS.NONE.value
         self.king = False
-        if main:
-            self.draw()
+        """ if self.main:
+            self.draw() """
 
-    #imports all attributes from another grid object
-    def importPawn(self,gridObj, main):
+    #imports all aselfributes from another grid object
+    def importPawn(self,gridObj):
         self.colored = gridObj.colored
         self.pawn = gridObj.pawn
         self.player = gridObj.player
         self.king = gridObj.king
-        if main:
-            self.draw()
+        """ if self.main:
+            self.draw() """
+
 
     #places the grid at a new set of coords
     def moveGrid(self,gX,gY):
@@ -63,8 +65,8 @@ class grid(turtle.RawTurtle):
     def draw(self):
         pixleX = int(self.gridX*grid.gridSize - 4*grid.gridSize)
         pixleY = int(self.gridY*grid.gridSize - 4*grid.gridSize)
+        # print("drawing")
         self.clear()
-
         self.goto(pixleX,pixleY)
         self.seth(0)
         self.down()

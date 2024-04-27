@@ -1,78 +1,73 @@
 
-from random import choice
-
+from copy import deepcopy
 from game.Board import Board
 from enums import PLAYERS, AgentsNames
+import turtle
+from time import sleep
 
+screen = turtle.Screen()
 
 class MiniMaxAgent:
     def __init__(self):
         self.name = AgentsNames.MINIMAX.value
         self.maxDepth = 3
-        self.nodesMap = []
-    def move(self, screen, board, player):
-        maxPlayer = None
-        if (player == PLAYERS.RED.value):
-            maxPlayer = True
-        else: 
-            maxPlayer = False
-        return self.findBestMove(screen, board, maxPlayer)
+    def move(self, board, player):
+        maxPlayer = True if player == PLAYERS.RED.value else False
+
+        return self.findBestMove(board, maxPlayer)
    
-    def findBestMove(self,screen, board, maximizing = True, depth = 0):
-        if (depth == 0): self.nodesMap.clear()
+    def findBestMove(self, board, maximizing = True, depth = 0):
+        # evitar que siempre haga el mismo movimiento con nodesMap
         isTerminal = board.checkWinner()
+        
         if(isTerminal or depth == self.maxDepth):
-                state = board.redPawns - board.bluePawns
-                return state
-                
+                return  board.evaluate(), board
         if (maximizing):
-            # Initialize best to the lowest possible value
-            best = -800;
-            # Loop through all empty cells
-            movements = board.findAvailableMovements(PLAYERS.RED.value)
            
+            maxEval = float('-inf');
+            bestMove = None
+            movements = board.findAvailableMovements(PLAYERS.RED.value)
+
             if movements["jumps"]:
                 movements = movements["jumps"]
             else: 
                 movements = movements["moves"]
-           
-            for move in movements:           
-                child = Board(screen, board.copyMatrix())
+            
+            for move in movements:   
+                temp_matrix = board.copyMatrix()   
+                child = Board(matrix=temp_matrix, redPawns=board.redPawns, bluePawns=board.bluePawns, blueKings = board.blueKings, redKings = board.redKings)
+
                 child.updateBoard(move)
-                nodeValue = self.findBestMove(screen, child, False, depth + 1);
-                best = max(best, nodeValue);
-                # board.undoMove(move)
-                if depth == 0:
-                    self.nodesMap.append((nodeValue,move))
-            if depth == 0:
-                print("BEST: ", best)
-                gg = filter(lambda x: x[0] == best, self.nodesMap)
-                return list(gg)
-              
-            return best
+                nodeValue = self.findBestMove(child, False, depth + 1)[0]
+                maxEval = max(maxEval, nodeValue);
+                if maxEval == nodeValue:
+                    bestMove = move
+
+            return maxEval, bestMove
         
         if not maximizing:
-            best = 100
+            maxEval = float('inf')
+            bestMove = None
             movements = board.findAvailableMovements(PLAYERS.BLUE.value)
-           
+
             if movements["jumps"]:
                 movements = movements["jumps"]
             else: 
                 movements = movements["moves"]
-          
             
             for move in movements:
-                child = Board(screen, board.copyMatrix())
+                temp_matrix = board.copyMatrix()   
+                child = Board(matrix=temp_matrix, redPawns=board.redPawns, bluePawns=board.bluePawns, blueKings = board.blueKings, redKings = board.redKings)
+               
                 child.updateBoard(move)
-                nodeValue = self.findBestMove(screen, child, True, depth + 1)
-                best = min(best, nodeValue)
-                # board.undoMove(move)
-                if depth == 0:
-                    self.nodesMap.append((nodeValue,move))
-            if depth == 0:
-                print("BEST: ", best)
-                gg = filter(lambda x: x[0] == best, self.nodesMap)
-                return list(gg)
+               
+                nodeValue = self.findBestMove(child, True, depth + 1)[0]
+                maxEval = min(maxEval, nodeValue)
+                
+                if maxEval == nodeValue:
+                    bestMove = move      
+            
+            return maxEval, bestMove
               
-            return best
+            
                 

@@ -1,50 +1,51 @@
 
 
 
+import turtle
 from game.Grid import grid
 from enums import PLAYERS
 from utils import logToConsole, onGrid
 
-
+screen = turtle.Screen()
 class Board:
-    def __init__(self,screen, matrix = None, main=False):
-        self.screen = screen
+    def __init__(self, matrix = None, bluePawns = 12, redPawns = 12, blueKings = 0, redKings = 0, main=False):
         self.matrix = matrix
         self.main = main
-        self.createGrid()
         self.highlightedSpaces = []
         self.spaceSelected = False
         self.turn = PLAYERS.NONE.value
-        self.bluePawns = 12
-        self.redPawns = 12
+        self.bluePawns = bluePawns
+        self.blueKings = blueKings
+        self.redPawns = redPawns
+        self.redKings = redKings
+        #create list to hold values of highlighted spaces
+        self.highlightedSpaces = []
+        self.spaceSelected = False
     #create the matrix that stores the game data
     def copyMatrix (self):
-        matrixCopy = [[None]*8,[None]*8,[None]*8,[None]*8,[None]*8,[None]*8,[None]*8,[None]*8]
+        matrixCopy = [[None]*8 for _ in range(8)]
 
         #populate matrixCopy with grid objects and assign them attributes
         for x in range(8):
             for y in range(8):
-                matrixCopy[x][y] = grid(self.screen)
+                matrixCopy[x][y] = grid()
                 matrixCopy[x][y].moveGrid(x,y)
-                if(((x + y) % 2) == 1):
-                    matrixCopy[x][y].colored = self.matrix[x][y].colored
-                    if(y in [0,1,2]):
-                        matrixCopy[x][y].pawn = self.matrix[x][y].pawn
-                        matrixCopy[x][y].player = self.matrix[x][y].player
-                    if(y in [5,6,7]):
-                        matrixCopy[x][y].pawn = self.matrix[x][y].pawn
-                        matrixCopy[x][y].player = self.matrix[x][y].player
+                matrixCopy[x][y].colored = self.matrix[x][y].colored
+                   
+                matrixCopy[x][y].pawn = self.matrix[x][y].pawn
+                matrixCopy[x][y].player = self.matrix[x][y].player
+                   
+                matrixCopy[x][y].pawn = self.matrix[x][y].pawn
+                matrixCopy[x][y].player = self.matrix[x][y].player
         return matrixCopy
     def createGrid(self):
         #create empty matrix
-        if not self.main: 
-            return
-        self.matrix = [[None]*8,[None]*8,[None]*8,[None]*8,[None]*8,[None]*8,[None]*8,[None]*8]
+        self.matrix = [[None]*8 for _ in range(8)]
 
         #populate matrix with grid objects and assign them attributes
         for x in range(8):
             for y in range(8):
-                self.matrix[x][y] = grid(self.screen)
+                self.matrix[x][y] = grid()
                 self.matrix[x][y].moveGrid(x,y)
                 if(((x + y) % 2) == 1):
                     self.matrix[x][y].colored = True
@@ -54,16 +55,16 @@ class Board:
                     if(y in [5,6,7]):
                         self.matrix[x][y].pawn = True
                         self.matrix[x][y].player = 2
-                if self.main:
-                    self.matrix[x][y].draw()
-            
+                self.matrix[x][y].draw()
+
         #create list to hold values of highlighted spaces
         self.highlightedSpaces = []
         self.spaceSelected = False
+            
     #moves a pawn from gridA to gridB
     def movePawn(self,gridA,gridB):
-        self.matrix[gridB[0]][gridB[1]].importPawn(self.matrix[gridA[0]][gridA[1]], self.main)
-        self.matrix[gridA[0]][gridA[1]].clearPawn(self.main)
+        self.matrix[gridB[0]][gridB[1]].importPawn(self.matrix[gridA[0]][gridA[1]])
+        self.matrix[gridA[0]][gridA[1]].clearPawn()
         self.kingPawn(gridB[0],gridB[1])
         if self.main:
             logToConsole("\tMoved pawn at %s to %s" % (gridA,gridB))
@@ -71,23 +72,30 @@ class Board:
     #moves a pawn from gridA to gridC by jumping over the pawn in gridB
     def jumpPawn(self,gridA,gridC):
         gridB = (int((gridC[0]+gridA[0])/2),int((gridC[1]+gridA[1])/2))
-        self.matrix[gridC[0]][gridC[1]].importPawn(self.matrix[gridA[0]][gridA[1]], self.main)
-        self.matrix[gridB[0]][gridB[1]].clearPawn(self.main)
-        self.matrix[gridA[0]][gridA[1]].clearPawn(self.main)
+        self.matrix[gridC[0]][gridC[1]].importPawn(self.matrix[gridA[0]][gridA[1]])
+        self.matrix[gridB[0]][gridB[1]].clearPawn()
+        self.matrix[gridA[0]][gridA[1]].clearPawn()
         self.kingPawn(gridC[0],gridC[1])
         if self.main:
             logToConsole("\tPawn at %s jumped over pawn at %s to coords %s" % (gridA,gridB,gridC))
 
+    def drawBoard (self):
+        for x in range(8):
+            for y in range(8):
+                 self.matrix[x][y].draw()
+        screen.update()
     #kings the pawn at coords (x, y) if it has reached it's kings row
     def kingPawn(self,x,y):
         if((self.matrix[x][y].player == 1) and (y == 7)):
             self.matrix[x][y].king = True
-            self.matrix[x][y].draw()
+            self.redKings += 1
+           
             if self.main:
                 logToConsole("\tPawn at (%s,%s) was Kinged" % (x,y))
         elif((self.matrix[x][y].player == 2) and (y == 0)):
             self.matrix[x][y].king = True
-            self.matrix[x][y].draw()
+            self.blueKings += 1
+           
             if self.main:
                 logToConsole("\tPawn at (%s,%s) was Kinged" % (x,y))  
     def undoMove(self, move):
@@ -130,7 +138,6 @@ class Board:
        
         return coords
     def updateBoard(self, move):
-        # print(move["move_coords"])
         x, y = move["move_coords"]
         pawn_x, pawn_y = move["pawn_coords"]
         self.spaceSelected = (x,y)
@@ -152,8 +159,9 @@ class Board:
                 
         else:
                 self.deselectAll()
-    def boardState (self):
-        return self.redPawns - self.bluePawns
+    def evaluate (self):
+        return self.redPawns - self.bluePawns + (self.redKings * 0.5 - self.blueKings * 0.5)
+
             
     #returns coords of jumps available to a pawn at coords (x, y)
     def findJumps(self,x,y):
@@ -185,6 +193,7 @@ class Board:
         movements_coords = {"moves": [], "jumps": []}
         for x in range(8):
             for y in range(8):
+                if (((x + y) % 2) == 1):
                     if (self.matrix[x][y].player == player and self.matrix[x][y].pawn):
                         move_coords = self.findMoves(x, y)
                         jumps_coords = self.findJumps(x, y)
@@ -202,25 +211,18 @@ class Board:
         if self.main:
              logToConsole("\tAll Spaces Un-highlited")
     def checkWinner(self):
-        red_pawns = 0
-        blue_pawns = 0
-        for x in range(8):
-            for y in range(8):
-                if self.matrix[x][y].player == PLAYERS.RED.value:
-                    red_pawns += 1
-                elif self.matrix[x][y].player == PLAYERS.BLUE.value:
-                    blue_pawns += 1
-        if red_pawns == 0:
+        # if self.redPawns == 0 and self.redKings == 0:
+        if self.redPawns == 0:
             return PLAYERS.BLUE
-        elif blue_pawns == 0:
+        # elif self.bluePawns == 0 and self.blueKings == 0:
+        elif self.bluePawns == 0:
             return PLAYERS.RED
-        elif red_pawns == 1 and blue_pawns == 1:
-            return PLAYERS.NONE
+        elif self.redPawns == 1 and self.bluePawns == 1:
+            return PLAYERS.DRAW
         return False
 
     #ends the current turn
     def endTurn(self):
-      
         if(self.turn == PLAYERS.RED.value):
             if self.main:
                  logToConsole("\tRed Player's turn has ended")

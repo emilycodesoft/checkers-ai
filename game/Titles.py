@@ -11,6 +11,11 @@ class titles(turtle.RawTurtle):
     def __init__(self,screen):
         self.screen = screen
         self.createPen()
+        self.LEFT = -screen.window_width() / 2
+        self.RIGHT = screen.window_width() / 2
+        self.TOP = screen.window_height() / 2
+        self.BOTTOM = -screen.window_height() / 2
+        self.FLOOR_LEVEL = 0.9 * self.BOTTOM
 
     #creates the turtle that will write the text
     def createPen(self):
@@ -30,23 +35,27 @@ class titles(turtle.RawTurtle):
         self.clear()
         self.color("black")
         self.goto(-1100/2,600/2)
-        self.write(line0,align="left",font=("Arial",20,"normal"))
+        self.write(line0,align="left",font=("Courier",20,"bold"))
         self.goto(4*grid.gridSize,5*grid.gridSize)
         self.write(line1,align="right",font=("Arial",14,"normal"))
         self.goto(4*grid.gridSize,4.75*grid.gridSize)
         self.write(line2,align="right",font=("Arial",14,"normal"))
         self.goto(4*grid.gridSize,4.5*grid.gridSize)
         self.write(line3,align="right",font=("Arial",14,"normal"))
-
+    def writeIterations(self,iterations):
+        self.clear()
+        self.color("black")
+        self.goto(-350,210)
+        self.write(f"Iterations: {iterations}",align="right",font=("Courier",14,"normal"))
     #writes the current turn on the screen
-    def writeTurn(self,turn, winner = None):
+    def writeTurn(self,turn, playerName = "", winner = None):
         string = ""
        
         if(turn == 1):
-            string = "It's Red Player's Turn"
+            string = f"It's Red ({playerName}) Player's Turn"
             self.color("red")
         elif(turn == 2):
-            string = "It's Blue Player's Turn"
+            string = f"It's Blue ({playerName}) Player's Turn"
             self.color("blue")
         elif(turn == 0):
             string = "Choose the Agents in the terminal"
@@ -61,4 +70,4 @@ class titles(turtle.RawTurtle):
 
         self.clear()
         self.goto(0,-5*grid.gridSize)
-        self.write(string,align="center",font=("Arial",20,"normal"))
+        self.write(string,align="center",font=("Courier", 20, "bold"),)
