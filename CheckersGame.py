@@ -99,7 +99,23 @@ class CheckersGame:
             return self.player1.name
         else: 
             return self.player2.name
-   
+    def highlightMoves(self, x, y):
+        if(self.board.spaceSelected != 0):
+                self.board.deselectAll()
+        moves = self.board.findMoves(x,y)
+        jumps = self.board.findJumps(x,y)
+        for move in moves:
+                        self.board.matrix[move[0]][move[1]].selected = 1
+                        self.board.highlightedSpaces.append((move[0],move[1]))
+                        self.board.matrix[move[0]][move[1]].draw()
+                        # print("drawing moves")
+        for move in jumps:
+                        self.board.matrix[move[0]][move[1]].selected = 2
+                        self.board.highlightedSpaces.append((move[0],move[1]))
+                        
+                        self.board.matrix[move[0]][move[1]].draw()
+        self.board.spaceSelected = (x,y)
+        logToConsole("\tMoves Highlighted for pawn at (%s,%s)" % (x,y))     
     def move (self):
             while self.currentPlayer() != AgentsNames.YOURSELF.value:
                 movement = None
@@ -149,7 +165,11 @@ class CheckersGame:
                 print("move: ", movement)
 
                 if movement:
-                    self.board.updateBoard(movement)
+                    x, y = movement["pawn_coords"]
+                    self.highlightMoves(x, y)
+                    self.screen.update()
+                    sleep(1)  
+                    self.board.updateBoard(movement, True)
                     """ if self.show_moves_gui:
                         self.screen.delay(1000) """
                     self.board.drawBoard()

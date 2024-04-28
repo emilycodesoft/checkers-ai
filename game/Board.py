@@ -1,6 +1,8 @@
 
 
 
+from random import choice
+from time import sleep
 import turtle
 from game.Grid import grid
 from enums import PLAYERS
@@ -137,7 +139,7 @@ class Board:
                 coords.append((x1,y1))
        
         return coords
-    def updateBoard(self, move):
+    def updateBoard(self, move, main=False):
         x, y = move["move_coords"]
         pawn_x, pawn_y = move["pawn_coords"]
         self.spaceSelected = (x,y)
@@ -153,10 +155,29 @@ class Board:
                 else: 
                             self.redPawns -= 1
                 self.jumpPawn(move["pawn_coords"], self.spaceSelected)
+               
+                jumps = self.findJumps(x,y)
+
+                while len(jumps):
+                    j = choice(jumps)
+                    if main:
+                        for jx in jumps:
+                            self.matrix[jx[0]][jx[1]].selected = 2
+                            self.highlightedSpaces.append((jx[0],jx[1]))
+                            self.matrix[jx[0]][jx[1]].draw()
+                        self.drawBoard()
+                        screen.update()
+                        sleep(1)
+                    self.jumpPawn(self.spaceSelected, j)
+                    if self.matrix[pawn_x][pawn_y].player == PLAYERS.RED.value:
+                                self.bluePawns -= 1
+                    else: 
+                                self.redPawns -= 1
+                    jumps = self.findJumps(j[0],j[1])
+                    self.deselectAll()
+                    self.spaceSelected = j   
                 self.deselectAll()
-                self.endTurn()
-              
-                
+                self.endTurn()           
         else:
                 self.deselectAll()
     def evaluate (self):
