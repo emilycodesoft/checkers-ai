@@ -123,7 +123,7 @@ class CheckersGame:
                     if (self.repeating and  self.iterations > 1):
                             if self.show_moves_gui:
                                 sleep(3)
-                            self.resetGame()
+                            return
                     else:
                         return
                     break
@@ -156,7 +156,12 @@ class CheckersGame:
                     # self.board.endTurn()
                     self.text1.writeTurn(self.board.turn, self.currentPlayer())
                     self.screen.update()  # Actualiza la pantalla
-
+                else:
+                    print("No movement")
+                    if self.board.turn == PLAYERS.BLUE.value:
+                        self.board.bluePawns = 0
+                    else:
+                        self.board.redPawns = 0
                 self.showBoardState()
     
     def showBoardState(self):
