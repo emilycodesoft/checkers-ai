@@ -119,26 +119,34 @@ class Board:
                 self.jumpPawn(self.spaceSelected, move["pawn_coords"])
                 self.deselectAll()
                 self.endTurn()
+    """ def getPieces(self, player):
+        pieces = []      
+        for x in range(8):
+            for y in range(8):
+                if (((x + y) % 2) == 1):
+                    if self.matrix[x][y].pawn:
+                        if self.matrix[x][y].player == player:
+                            pieces.append((x,y))               
+        return pieces
+    def getValidMoves(self, piece):
+        x, y = piece
+        jumps = self.findJumps(x, y)
+        if len(jumps):
+            return jumps
+        else:
+            moves = self.findMoves(x, y)
+            return moves """
+         
     #returns moves available to a pawn at (x, y)
-    def findMoves(self,x,y):
-        if(self.matrix[x][y].player == 1):
-            moves = [(-1,1),(1,1)]
-            if(self.matrix[x][y].king == 1):
-                moves += [(-1,-1),(1,-1)]
+    def findMoves(self, x, y):
+        moves = [(-1, 1), (1, 1)] if self.matrix[x][y].player == 1 else [(-1, -1), (1, -1)]
+        if self.matrix[x][y].king:
+            moves += [(-1, -1), (1, -1)] if self.matrix[x][y].player == 1 else [(-1, 1), (1, 1)]
 
-        elif(self.matrix[x][y].player == 2):
-            moves = [(-1,-1),(1,-1)]
-            if(self.matrix[x][y].king == 1):
-                moves += [(-1,1),(1,1)]
+        coords = [(x + move[0], y + move[1]) for move in moves if onGrid(x + move[0], y + move[1]) and not self.matrix[x + move[0]][y + move[1]].pawn]
 
-        coords = []
-        for move in moves:
-            x1 = x + move[0]
-            y1 = y + move[1]
-            if((onGrid(x1,y1) == True) and (self.matrix[x1][y1].pawn == False)):
-                coords.append((x1,y1))
-       
         return coords
+    
     def updateBoard(self, move, main=False):
         x, y = move["move_coords"]
         pawn_x, pawn_y = move["pawn_coords"]
@@ -150,11 +158,11 @@ class Board:
                 self.endTurn()
         #if grid clicked can be jumped too, jump the selected pawn
         elif(move["is_jump"]):
+                self.jumpPawn(move["pawn_coords"], self.spaceSelected)
                 if self.matrix[pawn_x][pawn_y].player == PLAYERS.RED.value:
                             self.bluePawns -= 1
                 else: 
                             self.redPawns -= 1
-                self.jumpPawn(move["pawn_coords"], self.spaceSelected)
                
                 jumps = self.findJumps(x,y)
 
@@ -181,35 +189,22 @@ class Board:
         else:
                 self.deselectAll()
     def evaluate (self):
-        return self.redPawns - self.bluePawns + (self.redKings * 0.5 - self.blueKings * 0.5)
+        return self.redPawns - self.bluePawns + (self.redKings * 0.5 - self.blueKings* 0.5)
 
             
     #returns coords of jumps available to a pawn at coords (x, y)
-    def findJumps(self,x,y):
-        if(self.matrix[x][y].player == 1):
-            moves = [(-1,1),(1,1)]
-            if(self.matrix[x][y].king == 1):
-                moves += [(-1,-1),(1,-1)]
-
-        elif(self.matrix[x][y].player == 2):
-            moves = [(-1,-1),(1,-1)]
-            if(self.matrix[x][y].king == 1):
-                moves += [(-1,1),(1,1)]
-
+    def findJumps(self, x, y):
+        moves = [(-1, 1), (1, 1), (-1, -1), (1, -1)] if self.matrix[x][y].king else [(-1, 1), (1, 1)] if self.matrix[x][y].player == 1 else [(-1, -1), (1, -1)]
+        
         coords = []
-        for move in moves:
-            x1 = x + move[0]
-            y1 = y + move[1]
-            x2 = x + 2*move[0]
-            y2 = y + 2*move[1]
-            if((onGrid(x2,y2) == True) and (self.matrix[x2][y2].pawn == False)):
-                if((self.matrix[x1][y1].pawn == True)):
-                    if((self.matrix[x][y].player == 1) and (self.matrix[x1][y1].player == 2)):
-                        coords.append((x2,y2))
-                    elif((self.matrix[x][y].player == 2) and (self.matrix[x1][y1].player == 1)):
-                        coords.append((x2,y2))
-       
+        for dx, dy in moves:
+            x1, y1 = x + dx, y + dy
+            x2, y2 = x + 2*dx, y + 2*dy
+            if onGrid(x2, y2) and not self.matrix[x2][y2].pawn and self.matrix[x1][y1].pawn and self.matrix[x1][y1].player != self.matrix[x][y].player:
+                coords.append((x2, y2))
+        
         return coords
+    
     def findAvailableMovements (self, player):
         movements_coords = {"moves": [], "jumps": []}
         for x in range(8):

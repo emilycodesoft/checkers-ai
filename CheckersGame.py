@@ -168,7 +168,7 @@ class CheckersGame:
                     x, y = movement["pawn_coords"]
                     self.highlightMoves(x, y)
                     self.screen.update()
-                    sleep(1)  
+                    # sleep(1)  
                     self.board.updateBoard(movement, True)
                     """ if self.show_moves_gui:
                         self.screen.delay(1000) """
@@ -185,7 +185,7 @@ class CheckersGame:
                 self.showBoardState()
     
     def showBoardState(self):
-        print(f"BOARD STATE: RED({self.board.redPawns}) y BLUE({self.board.bluePawns})")
+        print(f"BOARD STATE: RED({self.board.redPawns}) ({self.board.redKings}) y BLUE({self.board.bluePawns}) ({self.board.blueKings})")
     def chooseAgent(self, player):
         print(f"Choose Agent for player {player.name}: ")
 
