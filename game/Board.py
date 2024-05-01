@@ -167,7 +167,8 @@ class Board:
                             self.matrix[jx[0]][jx[1]].draw()
                         self.drawBoard()
                         screen.update()
-                        sleep(1)
+                        if self.main:
+                            sleep(1)
                     self.jumpPawn(self.spaceSelected, j)
                     if self.matrix[pawn_x][pawn_y].player == PLAYERS.RED.value:
                                 self.bluePawns -= 1
@@ -233,12 +234,12 @@ class Board:
              logToConsole("\tAll Spaces Un-highlited")
     def checkWinner(self):
         # if self.redPawns == 0 and self.redKings == 0:
-        if self.redPawns == 0:
+        if (self.redPawns + self.redKings) == 0:
             return PLAYERS.BLUE
         # elif self.bluePawns == 0 and self.blueKings == 0:
-        elif self.bluePawns == 0:
+        elif (self.bluePawns + self.blueKings) == 0:
             return PLAYERS.RED
-        elif self.redPawns == 1 and self.bluePawns == 1:
+        elif (self.redPawns + self.redKings) == 1 and (self.bluePawns + self.blueKings) == 1:
             return PLAYERS.DRAW
         return False
 

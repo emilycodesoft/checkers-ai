@@ -168,7 +168,8 @@ class CheckersGame:
                     x, y = movement["pawn_coords"]
                     self.highlightMoves(x, y)
                     self.screen.update()
-                    sleep(1)  
+                    if self.show_moves_gui:
+                        sleep(1)  
                     self.board.updateBoard(movement, True)
                     """ if self.show_moves_gui:
                         self.screen.delay(1000) """
