@@ -29,7 +29,7 @@ def main():
     wn.mainloop()
     logToConsole("Main Program Loop Ended")
     game.showStatistics()
-
+    return
     #announce end of main program loop
 
 main()

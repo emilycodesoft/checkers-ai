@@ -240,8 +240,7 @@ class Board:
         movements_coords = {"moves": [], "jumps": []}
         for x in range(8):
             for y in range(8):
-                if (((x + y) % 2) == 1):
-                    if (self.matrix[x][y].player == player and self.matrix[x][y].pawn):
+                    if (((x + y) % 2) == 1 and self.matrix[x][y].player == player and self.matrix[x][y].pawn):
                         move_coords = self.findMoves(x, y)
                         jumps_coords = self.findJumps(x, y)
                         if len(move_coords) or len(jumps_coords):

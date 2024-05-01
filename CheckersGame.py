@@ -4,6 +4,7 @@ from time import sleep
 from game.Board import Board
 from game.Grid import grid
 from agents.MiniMaxAgent import MiniMaxAgent
+from agents.PodaMiniMaxAgent import PodaMiniMaxAgent
 from agents.RandomAgent import RandomAgent
 from game.Titles import titles
 from agents.YourselfAgent import YourselfAgent
@@ -82,7 +83,7 @@ class CheckersGame:
         self.player2 = self.chooseAgent(PLAYERS.BLUE)
        
 
-        if (self.player1.name != AgentsNames.YOURSELF.value and self.player2.name != AgentsNames.YOURSELF.value):
+        if (self.player1.name != AgentsNames.YOURSELF.value or self.player2.name != AgentsNames.YOURSELF.value):
             option = int(input("¿DESEA VER LOS MOVIMIENTOS EN LA PANTALLA? 1. SI 2. NO: "))
             if option == 1:
                 self.show_moves_gui = True
@@ -145,7 +146,7 @@ class CheckersGame:
                 # print(winner)
                 if (self.board.turn == PLAYERS.RED.value):
                     
-                    if self.player1.name == AgentsNames.MINIMAX.value:
+                    if self.player1.name == AgentsNames.MINIMAX.value or self.player1.name == AgentsNames.PODAMINIMAX.value:
                         score, movement = self.player1.move(self.board, PLAYERS.RED.value)
                         # self.screen.update() 
                        
@@ -154,20 +155,20 @@ class CheckersGame:
                     
                 elif (self.board.turn == PLAYERS.BLUE.value):
 
-                    if self.player2.name == AgentsNames.MINIMAX.value:
+                    if self.player2.name == AgentsNames.MINIMAX.value or self.player2.name == AgentsNames.PODAMINIMAX.value:
                         score, movement = self.player2.move(self.board, PLAYERS.BLUE.value)
                         # self.screen.update()  # Actualiza la pantalla
                       
                     else: 
                         movement = self.player2.move()    
-                # print("score: ", score)
+                print("score: ", score)
                 # print("move: ", movement)
 
                 if movement:
                     x, y = movement["pawn_coords"]
                     self.highlightMoves(x, y)
                     self.screen.update()
-                    if self.show_moves_gui:
+                    if self.show_moves_gui and self.currentPlayer() != AgentsNames.MINIMAX.value:
                         sleep(1)  
                     self.board.updateBoard(movement, self.show_moves_gui)
                     """ if self.show_moves_gui:
@@ -185,7 +186,6 @@ class CheckersGame:
                     else:
                         self.board.redPawns = 0
                         self.board.redKings = 0
-                sleep(3)
                 self.showBoardState()
     
     def showBoardState(self):
@@ -203,8 +203,10 @@ class CheckersGame:
             return YourselfAgent(self.board)
         elif option == 2:
             return RandomAgent(self.board, player.value)
-        else: 
+        elif option == 3: 
             return MiniMaxAgent()
+        elif option == 4:
+            return PodaMiniMaxAgent()
     
     #this funcion is called whenever the window is clicked
     def mouseEvent (self,pixelX,pixelY):
