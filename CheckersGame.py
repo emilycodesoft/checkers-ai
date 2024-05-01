@@ -139,11 +139,10 @@ class CheckersGame:
                     if (self.repeating and  self.iterations > 1):
                             if self.show_moves_gui:
                                 sleep(3)
-                            return
+                            self.resetGame()
                     else:
                         return
-                    break
-                print(winner)
+                # print(winner)
                 if (self.board.turn == PLAYERS.RED.value):
                     
                     if self.player1.name == AgentsNames.MINIMAX.value:
@@ -161,8 +160,8 @@ class CheckersGame:
                       
                     else: 
                         movement = self.player2.move()    
-                print("score: ", score)
-                print("move: ", movement)
+                # print("score: ", score)
+                # print("move: ", movement)
 
                 if movement:
                     x, y = movement["pawn_coords"]
@@ -170,7 +169,7 @@ class CheckersGame:
                     self.screen.update()
                     if self.show_moves_gui:
                         sleep(1)  
-                    self.board.updateBoard(movement, True)
+                    self.board.updateBoard(movement, self.show_moves_gui)
                     """ if self.show_moves_gui:
                         self.screen.delay(1000) """
                     self.board.drawBoard()
@@ -179,14 +178,18 @@ class CheckersGame:
                     self.screen.update()  # Actualiza la pantalla
                 else:
                     print("No movement")
+                    sleep(30)
                     if self.board.turn == PLAYERS.BLUE.value:
                         self.board.bluePawns = 0
+                        self.board.blueKings = 0
                     else:
                         self.board.redPawns = 0
+                        self.board.redKings = 0
+                sleep(3)
                 self.showBoardState()
     
     def showBoardState(self):
-        print(f"BOARD STATE: RED({self.board.redPawns}) y BLUE({self.board.bluePawns})")
+        print(f"BOARD STATE: RED({self.board.redPawns}) ({self.board.redKings}) y BLUE({self.board.bluePawns}) ({self.board.blueKings})")
     def chooseAgent(self, player):
         print(f"Choose Agent for player {player.name}: ")
 

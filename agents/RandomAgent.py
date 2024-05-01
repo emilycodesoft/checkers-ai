@@ -10,12 +10,10 @@ class RandomAgent:
     def move(self):
         selectedMove = None
         availableMoves = self.board.findAvailableMovements(self.player)
-     
-        if len(availableMoves) > 0:
-            if len(availableMoves["jumps"]):
-                selectedMove = choice(availableMoves["jumps"])
-            else:
-                selectedMove = choice(availableMoves["moves"])
-        else:
+        if len(availableMoves["jumps"]):
+            selectedMove = choice(availableMoves["jumps"])
+        elif len(availableMoves["moves"]):
+            selectedMove = choice(availableMoves["moves"])
+        else: 
             selectedMove = False
         return selectedMove

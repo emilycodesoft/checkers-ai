@@ -61,7 +61,7 @@ class titles(turtle.RawTurtle):
             string = "Choose the Agents in the terminal"
         elif turn == 3:
           
-            if (winner.value != 0):
+            if (winner.value != 3):
                 self.color("orange")
                 string = f"{winner.name} wins!!!"
             else: 

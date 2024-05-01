@@ -88,18 +88,19 @@ class Board:
         screen.update()
     #kings the pawn at coords (x, y) if it has reached it's kings row
     def kingPawn(self,x,y):
-        if((self.matrix[x][y].player == 1) and (y == 7)):
-            self.matrix[x][y].king = True
-            self.redKings += 1
-           
-            if self.main:
-                logToConsole("\tPawn at (%s,%s) was Kinged" % (x,y))
-        elif((self.matrix[x][y].player == 2) and (y == 0)):
-            self.matrix[x][y].king = True
-            self.blueKings += 1
-           
-            if self.main:
-                logToConsole("\tPawn at (%s,%s) was Kinged" % (x,y))  
+        if self.matrix[x][y].king != True:
+            if((self.matrix[x][y].player == 1) and (y == 7)):
+                self.matrix[x][y].king = True
+                self.redKings += 1
+                self.redPawns -= 1
+                if self.main:
+                    logToConsole("\tPawn at (%s,%s) was Kinged" % (x,y))
+            elif((self.matrix[x][y].player == 2) and (y == 0)):
+                self.matrix[x][y].king = True
+                self.blueKings += 1
+                self.bluePawns -= 1
+                if self.main:
+                    logToConsole("\tPawn at (%s,%s) was Kinged" % (x,y))  
     def undoMove(self, move):
         # print(move["move_coords"])
         x, y = move["move_coords"]
@@ -150,16 +151,25 @@ class Board:
                 self.endTurn()
         #if grid clicked can be jumped too, jump the selected pawn
         elif(move["is_jump"]):
+                #update the gridB to the space jumped over
+                gridB = (int((pawn_x+self.spaceSelected[0])/2),int((pawn_y+self.spaceSelected[1])/2))
+                player = self.matrix[pawn_x][pawn_y].player
                 if self.matrix[pawn_x][pawn_y].player == PLAYERS.RED.value:
-                            self.bluePawns -= 1
+                            if self.matrix[gridB[0]][gridB[1]].king:
+                                    self.blueKings -= 1
+                            else:
+                                    self.bluePawns -= 1
                 else: 
-                            self.redPawns -= 1
+                            if self.matrix[gridB[0]][gridB[1]].king:
+                                    self.redKings -= 1
+                            else:
+                                    self.redPawns -= 1
                 self.jumpPawn(move["pawn_coords"], self.spaceSelected)
                
                 jumps = self.findJumps(x,y)
-
+                
                 while len(jumps):
-                    j = choice(jumps)
+                    # hightlight all available jumps
                     if main:
                         for jx in jumps:
                             self.matrix[jx[0]][jx[1]].selected = 2
@@ -169,14 +179,29 @@ class Board:
                         screen.update()
                         if self.main:
                             sleep(1)
-                    self.jumpPawn(self.spaceSelected, j)
-                    if self.matrix[pawn_x][pawn_y].player == PLAYERS.RED.value:
-                                self.bluePawns -= 1
+                    # select a random jump
+                    j = choice(jumps)
+                    # jump from the selected space to the random jump
+                    gridB = (int((j[0]+self.spaceSelected[0])/2),int((j[1]+self.spaceSelected[1])/2))
+                    
+                    if  player == PLAYERS.RED.value:
+                            if self.matrix[gridB[0]][gridB[1]].king:
+                                    self.blueKings -= 1
+                            else:
+                                    self.bluePawns -= 1
                     else: 
-                                self.redPawns -= 1
+                            if self.matrix[gridB[0]][gridB[1]].king:
+                                    self.redKings -= 1
+                            else:
+                                    self.redPawns -= 1
+                    
+                    self.jumpPawn(self.spaceSelected, j)
+
+                    # update the gridB to the space jumped over              
                     jumps = self.findJumps(j[0],j[1])
                     self.deselectAll()
                     self.spaceSelected = j   
+                
                 self.deselectAll()
                 self.endTurn()           
         else:
@@ -232,6 +257,7 @@ class Board:
         self.spaceSelected = False
         if self.main:
              logToConsole("\tAll Spaces Un-highlited")
+    
     def checkWinner(self):
         # if self.redPawns == 0 and self.redKings == 0:
         if (self.redPawns + self.redKings) == 0:
