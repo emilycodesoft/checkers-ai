@@ -91,12 +91,14 @@ class Board:
         if((self.matrix[x][y].player == 1) and (y == 7)):
             self.matrix[x][y].king = True
             self.redKings += 1
+            self.redPawns -= 1
            
             if self.main:
                 logToConsole("\tPawn at (%s,%s) was Kinged" % (x,y))
         elif((self.matrix[x][y].player == 2) and (y == 0)):
             self.matrix[x][y].king = True
             self.blueKings += 1
+            self.bluePawns -= 1
            
             if self.main:
                 logToConsole("\tPawn at (%s,%s) was Kinged" % (x,y))  
@@ -147,6 +149,17 @@ class Board:
 
         return coords
     
+    def updatePlayerPieces(self, player):
+        if player == PLAYERS.RED.value:
+            if self.matrix[self.spaceSelected[0]][self.spaceSelected[1]].king:
+                self.blueKings -= 1
+            else:
+                self.bluePawns -= 1
+        else:
+            if self.matrix[self.spaceSelected[0]][self.spaceSelected[1]].king:
+                self.redKings -= 1
+            else:
+                self.redPawns -= 1
     def updateBoard(self, move, main=False):
         x, y = move["move_coords"]
         pawn_x, pawn_y = move["pawn_coords"]
@@ -159,10 +172,7 @@ class Board:
         #if grid clicked can be jumped too, jump the selected pawn
         elif(move["is_jump"]):
                 self.jumpPawn(move["pawn_coords"], self.spaceSelected)
-                if self.matrix[pawn_x][pawn_y].player == PLAYERS.RED.value:
-                            self.bluePawns -= 1
-                else: 
-                            self.redPawns -= 1
+                self.updatePlayerPieces(self.matrix[pawn_x][pawn_y].player)
                
                 jumps = self.findJumps(x,y)
 
@@ -177,10 +187,7 @@ class Board:
                         screen.update()
                         sleep(1)
                     self.jumpPawn(self.spaceSelected, j)
-                    if self.matrix[pawn_x][pawn_y].player == PLAYERS.RED.value:
-                                self.bluePawns -= 1
-                    else: 
-                                self.redPawns -= 1
+                    self.updatePlayerPieces(self.matrix[pawn_x][pawn_y].player)
                     jumps = self.findJumps(j[0],j[1])
                     self.deselectAll()
                     self.spaceSelected = j   

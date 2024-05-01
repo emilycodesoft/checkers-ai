@@ -4,7 +4,9 @@ from time import sleep
 from game.Board import Board
 from game.Grid import grid
 from agents.MiniMaxAgent import MiniMaxAgent
+from agents.MiniMaxAgent import MiniMaxAgent
 from agents.RandomAgent import RandomAgent
+from agents.PodaMiniMaxAgent import PodaMiniMaxAgent
 from game.Titles import titles
 from agents.YourselfAgent import YourselfAgent
 from enums import PLAYERS, AgentsNames
@@ -143,10 +145,10 @@ class CheckersGame:
                     else:
                         return
                     break
-                print(winner)
+                # print(winner)
                 if (self.board.turn == PLAYERS.RED.value):
                     
-                    if self.player1.name == AgentsNames.MINIMAX.value:
+                    if self.player1.name == AgentsNames.MINIMAX.value or self.player1.name == AgentsNames.PODAMINIMAX.value:
                         score, movement = self.player1.move(self.board, PLAYERS.RED.value)
                         # self.screen.update() 
                        
@@ -155,7 +157,7 @@ class CheckersGame:
                     
                 elif (self.board.turn == PLAYERS.BLUE.value):
 
-                    if self.player2.name == AgentsNames.MINIMAX.value:
+                    if self.player2.name == AgentsNames.MINIMAX.value  or self.player2.name == AgentsNames.PODAMINIMAX.value:
                         score, movement = self.player2.move(self.board, PLAYERS.BLUE.value)
                         # self.screen.update()  # Actualiza la pantalla
                       
@@ -199,8 +201,10 @@ class CheckersGame:
             return YourselfAgent(self.board)
         elif option == 2:
             return RandomAgent(self.board, player.value)
-        else: 
+        elif option == 3: 
             return MiniMaxAgent()
+        elif option == 4:
+            return PodaMiniMaxAgent()
     
     #this funcion is called whenever the window is clicked
     def mouseEvent (self,pixelX,pixelY):
