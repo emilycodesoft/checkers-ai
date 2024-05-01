@@ -248,6 +248,18 @@ class Board:
                             movements_coords["jumps"].extend([{"move_coords": (mov_x, mov_y), "pawn_coords": (x, y), "is_jump": True} for (mov_x, mov_y) in jumps_coords])
         return movements_coords
     #deselects all of the selected grid spaces
+    def hash(self):
+        # Crear una representación única del estado del tablero
+        board_state = ""
+        for row in self.matrix:
+            for cell in row:
+                if cell is None:
+                    board_state += "0"  # Representa una celda vacía
+                else:
+                    # Asume que cada celda tiene un método __str__ o similar para representar su estado
+                    board_state += f"{1 if cell.pawn else 0}{1 if cell.king else 0}{cell.player}"
+        # Utiliza la función hash de Python para convertir la cadena de estado en un valor hash
+        return hash(board_state)
     
     def deselectAll(self):
         for space in self.highlightedSpaces:

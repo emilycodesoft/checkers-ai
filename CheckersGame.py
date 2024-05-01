@@ -83,7 +83,7 @@ class CheckersGame:
         self.player2 = self.chooseAgent(PLAYERS.BLUE)
        
 
-        if (self.player1.name != AgentsNames.YOURSELF.value or self.player2.name != AgentsNames.YOURSELF.value):
+        if (self.player1.name != AgentsNames.YOURSELF.value or self.player2.name != AgentsNames.YOURSELF.value) and (self.player1.name not in [AgentsNames.MINIMAX.value, AgentsNames.PODAMINIMAX.value] and self.player2.name not in [AgentsNames.MINIMAX.value, AgentsNames.PODAMINIMAX.value]):
             option = int(input("¿DESEA VER LOS MOVIMIENTOS EN LA PANTALLA? 1. SI 2. NO: "))
             if option == 1:
                 self.show_moves_gui = True
